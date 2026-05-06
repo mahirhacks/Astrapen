@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Skill Finder – AstraPen</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    :root {
+      --purple:#9B30FF; --purple-light:#C070FF; --purple-dark:#6A0FD4;
+      --bg:#080810; --bg2:#0D0D1A; --surface:#111120; --surface2:#16162A;
+      --text:#F0EDF8; --muted:#9990BB; --border:rgba(155,48,255,0.14);
+
+      /* Field colors */
+      --web:     #E84393;
+      --soc:     #00C2FF;
+      --malware: #FF6B35;
+      --dfir:    #FFD700;
+      --cloud:   #00E5A0;
+      --aipen:   #B44FFF;
+      --grc:     #4FC3F7;
+      --ad:      #FF4444;
+    }
+    html { scroll-behavior:smooth; }
+    body {
+      background:var(--bg); color:var(--text);
+      font-family:'DM Sans',sans-serif;
+      min-height:100vh; overflow-x:hidden;
+      cursor:none;
+    }
+
+    /* ── CURSOR ── */
+    .cursor { width:9px;height:9px;background:var(--purple);border-radius:50%;position:fixed;top:0;left:0;pointer-events:none;z-index:9999;transform:translate(-50%,-50%); }
+    .cursor-ring { width:30px;height:30px;border:1.5px solid var(--purple-light);border-radius:50%;position:fixed;top:0;left:0;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:all 0.16s ease;opacity:0.6; }
+
+    /* ── NOISE ── */
+    body::after { content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");opacity:0.022;pointer-events:none;z-index:9997; }
+
+    /* ── NAVBAR ── */
+    nav {
+      position:fixed;top:0;left:0;right:0;z-index:200;
+      display:flex;align-items:center;justify-content:space-between;
+      padding:16px 50px;
+      background:rgba(8,8,16,0.85);backdrop-filter:blur(16px);
+      border-bottom:1px solid var(--border);
+    }
+    .logo { font-family:'Syne',sans-serif;font-weight:800;font-size:1.2rem;display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--text); }
+    .logo-icon { width:28px;height:28px;background:linear-gradient(135deg,var(--purple-dark),var(--purple-light));border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px; }
+    .logo span { color:var(--purple); }
+    .nav-back { display:flex;align-items:center;gap:8px;color:var(--muted);text-decoration:none;font-size:0.88rem;transition:color 0.2s; }
+    .nav-back:hover { color:var(--text); }
+
+    /* ── BG GRID ── */
+    .bg-grid {
+      position:fixed;inset:0;z-index:0;pointer-events:none;
+      background-image:linear-gradient(rgba(155,48,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(155,48,255,0.04) 1px,transparent 1px);
+      background-size:60px 60px;
+    }
+    .bg-orb { position:fixed;border-radius:50%;filter:blur(80px);pointer-events:none;z-index:0; }
+    .orb1 { width:500px;height:500px;background:rgba(106,15,212,0.12);top:-150px;left:-150px;animation:orbf 10s ease-in-out infinite alternate; }
+    .orb2 { width:400px;height:400px;background:rgba(155,48,255,0.08);bottom:-100px;right:-100px;animation:orbf 13s ease-in-out infinite alternate-reverse; }
+    @keyframes orbf { from{transform:translate(0,0)}to{transform:translate(40px,40px)} }
+
+    /* ── MAIN WRAPPER ── */
+    .wrapper {
+      position:relative;z-index:1;
+      padding-top:90px;
+      min-height:100vh;
+      display:flex;flex-direction:column;align-items:center;
+      padding-bottom:80px;
+    }
+
+    /* ── SCREENS ── */
+    .screen { display:none;width:100%;max-width:760px;padding:0 24px;animation:fadeUp 0.5s ease both; }
+    .screen.active { display:block; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)} }
+
+    /* ── INTRO SCREEN ── */
+    .intro-tag {
+      display:inline-flex;align-items:center;gap:6px;
+      background:rgba(155,48,255,0.1);border:1px solid rgba(155,48,255,0.25);
+      color:var(--purple-light);border-radius:20px;
+      padding:5px 16px;font-size:0.72rem;letter-spacing:0.08em;text-transform:uppercase;
+      margin-bottom:20px;
+    }
+    .intro h1 {
+      font-family:'Syne',sans-serif;font-size:clamp(2.2rem,5vw,3.6rem);font-weight:800;
+      line-height:1.1;margin-bottom:18px;
+    }
+    .intro h1 .accent { color:var(--purple-light); }
+    .intro-desc { color:var(--muted);font-size:1rem;line-height:1.75;max-width:560px;margin-bottom:32px; }
+    .intro-stats {
+      display:flex;gap:24px;flex-wrap:wrap;margin-bottom:40px;
+    }
+    .stat-pill {
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:30px;padding:8px 18px;
+      font-size:0.82rem;color:var(--muted);
+      display:flex;align-items:center;gap:8px;
+    }
+    .stat-pill strong { color:var(--text); }
+    .start-btn {
+      display:inline-flex;align-items:center;gap:10px;
+      background:var(--purple);color:#fff;border:none;border-radius:30px;
+      padding:16px 36px;font-family:'Syne',sans-serif;
+      font-size:1rem;font-weight:700;cursor:none;
+      transition:all 0.3s ease;box-shadow:0 0 28px rgba(155,48,255,0.45);
+    }
+    .start-btn:hover { background:var(--purple-light);box-shadow:0 6px 36px rgba(155,48,255,0.65);transform:translateY(-2px); }
+
+    /* ── PROGRESS BAR ── */
+    .progress-wrap { width:100%;margin-bottom:32px; }
+    .progress-top { display:flex;justify-content:space-between;align-items:center;margin-bottom:8px; }
+    .progress-label { font-size:0.78rem;color:var(--muted); }
+    .progress-count { font-family:'Syne',sans-serif;font-size:0.78rem;color:var(--purple-light);font-weight:700; }
+    .progress-bar { height:4px;background:rgba(155,48,255,0.12);border-radius:4px;overflow:hidden; }
+    .progress-fill { height:100%;background:linear-gradient(90deg,var(--purple-dark),var(--purple-light));border-radius:4px;transition:width 0.4s ease; }
+
+    /* ── STAGE LABEL ── */
+    .stage-label {
+      display:inline-flex;align-items:center;gap:6px;
+      font-size:0.7rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
+      color:var(--purple-light);margin-bottom:10px;
+    }
+    .stage-dot { width:6px;height:6px;border-radius:50%;background:var(--purple); }
+
+    /* ── QUESTION ── */
+    .question-text {
+      font-family:'Syne',sans-serif;font-size:1.45rem;font-weight:800;
+      line-height:1.3;margin-bottom:10px;
+    }
+    .question-sub { font-size:0.88rem;color:var(--muted);margin-bottom:28px;line-height:1.6; }
+
+    /* ── OPTIONS ── */
+    .options-grid {
+      display:grid;gap:10px;
+      grid-template-columns:1fr 1fr;
+      margin-bottom:28px;
+    }
+    .options-grid.single-col { grid-template-columns:1fr; }
+    .option-btn {
+      background:var(--surface);
+      border:1.5px solid var(--border);
+      border-radius:12px;padding:16px 18px;
+      text-align:left;cursor:none;
+      font-family:'DM Sans',sans-serif;font-size:0.9rem;
+      color:var(--muted);
+      transition:all 0.25s ease;
+      display:flex;align-items:flex-start;gap:12px;
+      line-height:1.4;
+    }
+    .option-btn:hover { border-color:rgba(155,48,255,0.4);color:var(--text);background:rgba(155,48,255,0.06); }
+    .option-btn.selected {
+      border-color:var(--purple);
+      background:rgba(155,48,255,0.1);
+      color:var(--text);
+      box-shadow:0 0 18px rgba(155,48,255,0.15);
+    }
+    .option-key {
+      width:22px;height:22px;border-radius:6px;
+      background:rgba(155,48,255,0.12);border:1px solid rgba(155,48,255,0.2);
+      display:flex;align-items:center;justify-content:center;
+      font-size:0.65rem;font-weight:700;color:var(--purple-light);
+      flex-shrink:0;margin-top:1px;
+      transition:background 0.2s;font-family:'Syne',sans-serif;
+    }
+    .option-btn.selected .option-key { background:var(--purple);border-color:var(--purple);color:#fff; }
+
+    /* Slider question */
+    .slider-wrap { margin-bottom:28px; }
+    .slider-labels { display:flex;justify-content:space-between;font-size:0.75rem;color:var(--muted);margin-bottom:10px; }
+    input[type=range] {
+      -webkit-appearance:none;appearance:none;
+      width:100%;height:6px;
+      background:rgba(155,48,255,0.15);
+      border-radius:4px;outline:none;cursor:none;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance:none;appearance:none;
+      width:20px;height:20px;border-radius:50%;
+      background:var(--purple);
+      border:2px solid var(--purple-light);
+      box-shadow:0 0 10px rgba(155,48,255,0.4);
+      cursor:none;
+    }
+    .slider-value {
+      text-align:center;margin-top:10px;
+      font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;
+      color:var(--purple-light);
+    }
+
+    /* ── NAV BUTTONS ── */
+    .q-nav { display:flex;justify-content:space-between;align-items:center;gap:14px; }
+    .btn-prev {
+      background:transparent;border:1px solid var(--border);
+      color:var(--muted);border-radius:30px;
+      padding:12px 24px;font-family:'DM Sans',sans-serif;
+      font-size:0.88rem;cursor:none;transition:all 0.2s;
+    }
+    .btn-prev:hover { border-color:rgba(155,48,255,0.3);color:var(--text); }
+    .btn-next {
+      background:var(--purple);color:#fff;border:none;border-radius:30px;
+      padding:12px 32px;font-family:'Syne',sans-serif;
+      font-size:0.88rem;font-weight:700;cursor:none;
+      transition:all 0.25s;box-shadow:0 0 18px rgba(155,48,255,0.35);
+      margin-left:auto;
+    }
+    .btn-next:hover { background:var(--purple-light);transform:translateY(-1px);box-shadow:0 4px 24px rgba(155,48,255,0.55); }
+    .btn-next:disabled { opacity:0.35;pointer-events:none; }
+
+    /* ── RESULTS ── */
+    .results-header { text-align:center;margin-bottom:40px; }
+    .results-header h2 {
+      font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;margin-bottom:8px;
+    }
+    .results-header p { color:var(--muted);font-size:0.95rem;line-height:1.7; }
+
+    .result-card {
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:16px;padding:22px 24px;
+      margin-bottom:12px;
+      display:flex;align-items:center;gap:20px;
+      transition:border-color 0.3s,box-shadow 0.3s;
+      opacity:0;transform:translateY(20px);
+      animation:resultIn 0.5s ease forwards;
+    }
+    .result-card:hover { box-shadow:0 4px 24px rgba(155,48,255,0.1); }
+    @keyframes resultIn { to{opacity:1;transform:translateY(0)} }
+
+    .result-rank {
+      font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;
+      width:36px;flex-shrink:0;color:var(--muted);
+    }
+    .result-rank.top { color:var(--purple-light); }
+
+    .result-icon { font-size:1.8rem;flex-shrink:0;width:44px;text-align:center; }
+
+    .result-info { flex:1; }
+    .result-name {
+      font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;
+      margin-bottom:4px;
+    }
+    .result-desc { font-size:0.82rem;color:var(--muted);line-height:1.6; }
+
+    .result-bar-wrap { width:180px;flex-shrink:0; }
+    .result-pct {
+      font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;
+      text-align:right;margin-bottom:5px;
+    }
+    .result-bar {
+      height:6px;background:rgba(155,48,255,0.12);border-radius:4px;overflow:hidden;
+    }
+    .result-bar-fill {
+      height:100%;border-radius:4px;
+      transition:width 1s cubic-bezier(0.4,0,0.2,1);
+      width:0%;
+    }
+
+    /* Top card styling */
+    .result-card:first-child {
+      border-color:rgba(155,48,255,0.35);
+      background:linear-gradient(135deg,rgba(155,48,255,0.08),rgba(106,15,212,0.05));
+      box-shadow:0 0 30px rgba(155,48,255,0.1);
+    }
+
+    .results-actions { display:flex;gap:12px;justify-content:center;margin-top:32px;flex-wrap:wrap; }
+    .btn-retry {
+      background:transparent;border:1px solid var(--border);
+      color:var(--muted);border-radius:30px;
+      padding:12px 28px;font-family:'DM Sans',sans-serif;
+      font-size:0.88rem;cursor:none;transition:all 0.2s;
+    }
+    .btn-retry:hover { border-color:var(--purple);color:var(--text); }
+    .btn-explore {
+      background:var(--purple);color:#fff;border:none;border-radius:30px;
+      padding:12px 28px;font-family:'Syne',sans-serif;
+      font-size:0.88rem;font-weight:700;cursor:none;
+      transition:all 0.25s;box-shadow:0 0 18px rgba(155,48,255,0.35);
+      text-decoration:none;display:inline-flex;align-items:center;gap:8px;
+    }
+    .btn-explore:hover { background:var(--purple-light);transform:translateY(-1px); }
+
+    /* Trait tags on result */
+    .result-traits { display:flex;gap:6px;flex-wrap:wrap;margin-top:8px; }
+    .trait-tag {
+      font-size:0.68rem;padding:2px 10px;border-radius:20px;
+      border:1px solid;font-weight:500;
+    }
+
+    @media(max-width:600px) {
+      nav { padding:14px 20px; }
+      .options-grid { grid-template-columns:1fr; }
+      .result-bar-wrap { width:100px; }
+      .result-pct { font-size:1.1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+<div class="bg-grid"></div>
+<div class="bg-orb orb1"></div>
+<div class="bg-orb orb2"></div>
+
+<nav>
+  <a href="index.html" class="logo">
+    <div class="logo-icon">🔐</div>
+    Astra<span>Pen</span>
+  </a>
+  <a href="index.html" class="nav-back">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+    Back to Guide
+  </a>
+</nav>
+
+<div class="wrapper">
+
+  <!-- ══ SCREEN: INTRO ══ -->
+  <div class="screen active" id="screen-intro">
+    <div class="intro">
+      <div class="intro-tag">🧭 Skill Finder</div>
+      <h1>What kind of<br/><span class="accent">hacker are you?</span></h1>
+      <p class="intro-desc">
+        Answer 20 questions honestly about how you think, what excites you, and how you work.
+        The algorithm scores you across 8 cybersecurity specializations and shows your top 5 matches with a compatibility percentage.
+        <br/>
+        <br/>
+        NOTE : Please Complete the "FUNDAMENTALS" First for Better Result.
+      </p>
+      <div class="intro-stats">
+        <div class="stat-pill"><strong>20</strong> questions</div>
+        <div class="stat-pill"><strong>8</strong> specializations scored</div>
+        <div class="stat-pill"><strong>~5 min</strong> to complete</div>
+        <div class="stat-pill"><strong>No signup</strong> required</div>
+      </div>
+      <button class="start-btn" id="startBtn">
+        Find my path
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN: QUESTION ══ -->
+  <div class="screen" id="screen-question">
+    <div class="progress-wrap">
+      <div class="progress-top">
+        <span class="progress-label" id="stageName">Stage 1 — Mindset</span>
+        <span class="progress-count" id="qCount">1 / 20</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:5%"></div></div>
+    </div>
+
+    <div class="stage-label"><div class="stage-dot"></div><span id="stageLabel">How You Think</span></div>
+    <div class="question-text" id="questionText">Loading...</div>
+    <div class="question-sub" id="questionSub"></div>
+
+    <div id="optionsContainer"></div>
+
+    <div class="q-nav">
+      <button class="btn-prev" id="btnPrev">← Back</button>
+      <button class="btn-next" id="btnNext" disabled>Continue →</button>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN: RESULTS ══ -->
+  <div class="screen" id="screen-results">
+    <div class="results-header">
+      <div class="intro-tag">🎯 Your Results</div>
+      <h2>Your Cybersecurity <span style="color:var(--purple-light)">Profile</span></h2>
+      <p>Based on your answers, here are your top 5 matches — scored from how well your mindset, habits, and interests align with each field.</p>
+    </div>
+    <div id="resultsContainer"></div>
+    <div class="results-actions">
+      <button class="btn-retry" id="retryBtn">↺ Retake Survey</button>
+      <a href="index.html#guide" class="btn-explore">Explore the Guide →</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+//  SPECIALIZATION DEFINITIONS
+//  Each field has: name, icon, color, traits, description
+// ════════════════════════════════════════════════════════
+const FIELDS = {
+  web:     { name:"Web & API Exploitation",      icon:"🕸️",  color:"#E84393", traits:["Creative","Detail-oriented","Patient"],     desc:"Finding and exploiting vulnerabilities in websites, APIs, and web apps. Heavy logic, code reading, and creativity." },
+  soc:     { name:"SOC Analyst",                 icon:"📡",  color:"#00C2FF", traits:["Methodical","Alert","Team-player"],          desc:"Monitoring, detecting, and responding to threats in real-time. Fast-paced, pattern recognition, and communication." },
+  malware: { name:"Malware Analyst",             icon:"🦠",  color:"#FF6B35", traits:["Curious","Analytical","Independent"],        desc:"Reverse engineering malicious software to understand how it works. Deep technical analysis and reverse engineering." },
+  dfir:    { name:"DFIR",                        icon:"🔍",  color:"#FFD700", traits:["Investigative","Precise","Systematic"],      desc:"Digital Forensics & Incident Response — uncovering what happened after a breach. Like being a digital detective." },
+  cloud:   { name:"Cloud Security & DevSecOps",  icon:"☁️",  color:"#00E5A0", traits:["Builder","Systematic","Collaborative"],      desc:"Securing cloud infrastructure and embedding security into development pipelines. Bridges tech and engineering." },
+  aipen:   { name:"AI Pen Testing",              icon:"🤖",  color:"#B44FFF", traits:["Experimental","Forward-thinking","Curious"], desc:"Testing AI systems and LLMs for vulnerabilities. Cutting-edge field at the intersection of AI and security." },
+  grc:     { name:"GRC",                         icon:"📋",  color:"#4FC3F7", traits:["Organized","Strategic","Big-picture"],       desc:"Governance, Risk & Compliance — the policy and framework side of security. Less hacking, more strategy." },
+  ad:      { name:"Active Directory Exploit",    icon:"🏛️",  color:"#FF4444", traits:["Strategic","Persistent","Technical"],        desc:"Attacking and defending Windows enterprise networks. Privilege escalation, lateral movement, and domain takeover." },
+};
+
+// ════════════════════════════════════════════════════════
+//  QUESTIONS
+//  Each option has a `scores` object — how much it bumps
+//  each field. Values are 0–4. Missing = 0.
+// ════════════════════════════════════════════════════════
+const QUESTIONS = [
+  // ── STAGE 1: MINDSET (Q1–4)
+  {
+    stage:"Stage 1", stageLabel:"Your Mindset",
+    text:"When you get a new piece of tech, what's the first thing you want to do?",
+    sub:"Be honest — this tells us a lot about how your brain naturally works.",
+    type:"choice",
+    options:[
+      { text:"Take it apart and see how it works inside",        scores:{ malware:4, dfir:2, web:1 } },
+      { text:"Set it up and secure it immediately",              scores:{ soc:3, grc:2, cloud:2 } },
+      { text:"Look for ways to break or bypass it",              scores:{ web:4, ad:3, aipen:2 } },
+      { text:"Read the documentation and understand the design", scores:{ grc:3, cloud:2, dfir:2 } },
+    ]
+  },
+  {
+    stage:"Stage 1", stageLabel:"Your Mindset",
+    text:"A problem has been bugging you for days. How do you typically handle it?",
+    sub:"This is about your persistence style, not just your skills.",
+    type:"choice",
+    options:[
+      { text:"I obsess over it until I crack it — even lose sleep", scores:{ malware:4, web:3, ad:2 } },
+      { text:"I document everything and work through it step by step", scores:{ dfir:4, grc:2, soc:2 } },
+      { text:"I collaborate — someone else might have the piece I'm missing", scores:{ soc:3, cloud:3, grc:2 } },
+      { text:"I take a break, come back fresh and think bigger picture", scores:{ aipen:3, grc:3, cloud:2 } },
+    ]
+  },
+  {
+    stage:"Stage 1", stageLabel:"Your Mindset",
+    text:"Which describes your relationship with rules?",
+    sub:"No wrong answer — security needs all types.",
+    type:"choice",
+    options:[
+      { text:"I follow them, but I'm always curious what's beyond them", scores:{ web:3, ad:3, aipen:2 } },
+      { text:"Rules exist for good reason — I help enforce them",         scores:{ grc:4, soc:2, dfir:2 } },
+      { text:"I understand rules to know exactly where the gaps are",     scores:{ ad:4, web:3, malware:2 } },
+      { text:"I prefer to build systems that make rules easier to follow",scores:{ cloud:4, grc:2, soc:1 } },
+    ]
+  },
+  {
+    stage:"Stage 1", stageLabel:"Your Mindset",
+    text:"You're given complete freedom on a project. What energizes you most?",
+    type:"choice",
+    options:[
+      { text:"Deep research and reverse engineering something complex",   scores:{ malware:4, dfir:3, aipen:2 } },
+      { text:"Building something that scales and is hard to break",       scores:{ cloud:4, grc:2, soc:1 } },
+      { text:"Finding the one vulnerability nobody else found",           scores:{ web:4, ad:3, aipen:3 } },
+      { text:"Piecing together an attack story after it happened",        scores:{ dfir:4, soc:3, grc:1 } },
+    ]
+  },
+
+  // ── STAGE 2: TECHNICAL AFFINITY (Q5–9)
+  {
+    stage:"Stage 2", stageLabel:"Technical Affinity",
+    text:"Which of these sounds most interesting to you right now?",
+    sub:"Gut reaction — don't overthink it.",
+    type:"choice",
+    options:[
+      { text:"Reading assembly code and figuring out what malware does", scores:{ malware:4, dfir:2 } },
+      { text:"Chaining vulnerabilities to go from a web app to full access", scores:{ web:4, ad:2 } },
+      { text:"Configuring Kubernetes clusters with security policies",   scores:{ cloud:4, grc:1 } },
+      { text:"Watching network traffic for anomalies in real time",      scores:{ soc:4, dfir:2 } },
+    ]
+  },
+  {
+    stage:"Stage 2", stageLabel:"Technical Affinity",
+    text:"Which tool would you most want to master?",
+    type:"choice",
+    options:[
+      { text:"Burp Suite / web proxies",           scores:{ web:4, aipen:1 } },
+      { text:"Ghidra / IDA Pro (reverse engineering)", scores:{ malware:4, dfir:2 } },
+      { text:"Splunk / SIEM tools",                scores:{ soc:4, dfir:2 } },
+      { text:"BloodHound / Mimikatz",              scores:{ ad:4, web:1 } },
+    ]
+  },
+  {
+    stage:"Stage 2", stageLabel:"Technical Affinity",
+    text:"How comfortable are you with writing code?",
+    type:"slider", min:1, max:5,
+    labels:["Not at all","A little","Some","Pretty well","I love it"],
+    // Slider maps value to score multipliers for code-heavy fields
+    sliderField:"code",
+    scores:{ 1:{ grc:3, soc:1 }, 2:{ grc:2, soc:2, dfir:1 }, 3:{ soc:2, dfir:2, web:2, cloud:2 }, 4:{ web:3, cloud:3, malware:2, ad:2 }, 5:{ web:4, malware:4, aipen:4, cloud:3, ad:3 } }
+  },
+  {
+    stage:"Stage 2", stageLabel:"Technical Affinity",
+    text:"Which environment sounds most like where you want to work?",
+    type:"choice",
+    options:[
+      { text:"A dark terminal, reversing binaries alone at 2am",     scores:{ malware:4, web:2, ad:2 } },
+      { text:"A SOC floor with multiple screens, team around me",    scores:{ soc:4, dfir:2, grc:1 } },
+      { text:"A cloud console deploying and hardening infrastructure",scores:{ cloud:4, grc:2 } },
+      { text:"A courtroom or boardroom presenting risk findings",    scores:{ grc:4, dfir:2 } },
+    ]
+  },
+  {
+    stage:"Stage 2", stageLabel:"Technical Affinity",
+    text:"When you think about Windows domains (Active Directory), what's your reaction?",
+    type:"choice",
+    options:[
+      { text:"That's where the real enterprise hacking happens — I'm in", scores:{ ad:4, dfir:2 } },
+      { text:"Sounds important for defending corporate networks",         scores:{ soc:3, grc:2, dfir:2 } },
+      { text:"Never really dug into it yet",                             scores:{ web:1, cloud:1 } },
+      { text:"Interesting but I'm more drawn to the application layer",  scores:{ web:3, aipen:2, cloud:2 } },
+    ]
+  },
+
+  // ── STAGE 3: PERSONALITY (Q10–13)
+  {
+    stage:"Stage 3", stageLabel:"How You Work",
+    text:"How do you feel about long, slow investigations with no guaranteed payoff?",
+    type:"choice",
+    options:[
+      { text:"That's my zone — I'll stay until I find the answer",     scores:{ malware:4, dfir:4, web:2 } },
+      { text:"I can handle it if I know the process is sound",         scores:{ dfir:3, grc:3, soc:2 } },
+      { text:"I prefer faster feedback loops",                         scores:{ soc:3, web:3, aipen:2 } },
+      { text:"I'd rather prevent the incident than investigate after", scores:{ cloud:4, grc:3, soc:1 } },
+    ]
+  },
+  {
+    stage:"Stage 3", stageLabel:"How You Work",
+    text:"Which best describes your communication style at work?",
+    type:"choice",
+    options:[
+      { text:"I write detailed technical reports and documentation",    scores:{ dfir:4, grc:3, malware:2 } },
+      { text:"I brief teams quickly and move to action",               scores:{ soc:4, cloud:2, ad:2 } },
+      { text:"I present risks to management and make policy recommendations", scores:{ grc:4, dfir:2 } },
+      { text:"I keep it minimal — my code and PoC speak for me",      scores:{ web:3, malware:3, aipen:3, ad:2 } },
+    ]
+  },
+  {
+    stage:"Stage 3", stageLabel:"How You Work",
+    text:"Under pressure, what's your natural response?",
+    type:"choice",
+    options:[
+      { text:"I get sharper — pressure brings out my best",       scores:{ soc:4, ad:3, web:2 } },
+      { text:"I slow down deliberately to avoid mistakes",        scores:{ dfir:4, malware:3, grc:2 } },
+      { text:"I delegate and coordinate — that's how teams win", scores:{ grc:3, cloud:3, soc:2 } },
+      { text:"I experiment fast and iterate",                     scores:{ aipen:4, web:3, cloud:2 } },
+    ]
+  },
+  {
+    stage:"Stage 3", stageLabel:"How You Work",
+    text:"How much do you enjoy reading compliance frameworks, policies and legal documents?",
+    type:"slider", min:1, max:5,
+    labels:["Would rather not","Not my thing","Neutral","I don't mind","I actually enjoy it"],
+    scores:{ 1:{ malware:2, web:2, ad:2 }, 2:{ malware:1, web:1 }, 3:{ soc:1, dfir:1 }, 4:{ grc:3, dfir:2 }, 5:{ grc:5, dfir:2 } }
+  },
+
+  // ── STAGE 4: SCENARIO (Q14–17)
+  {
+    stage:"Stage 4", stageLabel:"Real Scenarios",
+    text:"You discover a company's login page is vulnerable to SQL injection. What's your first instinct?",
+    type:"choice",
+    options:[
+      { text:"Start mapping the database structure methodically",    scores:{ web:4, ad:2, dfir:1 } },
+      { text:"Report it immediately with a detailed write-up",      scores:{ grc:3, dfir:3, soc:2 } },
+      { text:"Check if it connects to internal systems / AD",       scores:{ ad:4, web:2 } },
+      { text:"Use it as a case study for an ML-based detection model", scores:{ aipen:4, web:1 } },
+    ]
+  },
+  {
+    stage:"Stage 4", stageLabel:"Real Scenarios",
+    text:"A ransomware attack just hit a company. You're called in. What role do you want?",
+    type:"choice",
+    options:[
+      { text:"Lead the forensic investigation — find patient zero",     scores:{ dfir:4, malware:3 } },
+      { text:"Analyze the ransomware binary to find decryption flaws",  scores:{ malware:4, dfir:2 } },
+      { text:"Coordinate the response and keep everyone informed",      scores:{ soc:4, grc:3 } },
+      { text:"Assess how cloud backups fared and rebuild the environment", scores:{ cloud:4, grc:2 } },
+    ]
+  },
+  {
+    stage:"Stage 4", stageLabel:"Real Scenarios",
+    text:"You're auditing a company's security. Which finding would excite you most to present?",
+    type:"choice",
+    options:[
+      { text:"A full domain compromise chain from a web login",       scores:{ web:3, ad:4 } },
+      { text:"A zero-day in a major library used company-wide",       scores:{ malware:3, aipen:3, web:2 } },
+      { text:"A misconfigured S3 bucket exposing customer data",      scores:{ cloud:4, grc:2 } },
+      { text:"Evidence an insider leaked data over 6 months",         scores:{ dfir:4, soc:3 } },
+    ]
+  },
+  {
+    stage:"Stage 4", stageLabel:"Real Scenarios",
+    text:"How do you feel about AI and machine learning in cybersecurity?",
+    type:"choice",
+    options:[
+      { text:"It's the next frontier — I want to attack and probe AI systems",  scores:{ aipen:4, web:1 } },
+      { text:"Great for detection and automation in SOC work",                  scores:{ soc:3, cloud:2 } },
+      { text:"Useful but humans still need to understand the fundamentals",     scores:{ malware:2, dfir:2, grc:2 } },
+      { text:"It opens new compliance and governance challenges I want to solve",scores:{ grc:3, cloud:2 } },
+    ]
+  },
+
+  // ── STAGE 5: VALUES & CAREER (Q18–20)
+  {
+    stage:"Stage 5", stageLabel:"Career & Values",
+    text:"What motivates you most in a career?",
+    type:"choice",
+    options:[
+      { text:"Always learning — the field keeps evolving and so do I", scores:{ malware:3, aipen:3, web:2, ad:2 } },
+      { text:"Making a real difference — protecting real people",      scores:{ soc:3, grc:3, dfir:2 } },
+      { text:"Being the best technically — nobody knows this deeper",  scores:{ malware:4, ad:3, web:3 } },
+      { text:"Building systems and processes that scale",              scores:{ cloud:4, grc:3 } },
+    ]
+  },
+  {
+    stage:"Stage 5", stageLabel:"Career & Values",
+    text:"Which career path sounds most appealing to you right now?",
+    type:"choice",
+    options:[
+      { text:"Red teamer / penetration tester",      scores:{ web:3, ad:4, aipen:2 } },
+      { text:"SOC analyst or threat intelligence",   scores:{ soc:4, dfir:2 } },
+      { text:"Malware researcher / reverse engineer",scores:{ malware:4, dfir:2 } },
+      { text:"Cloud security engineer / DevSecOps",  scores:{ cloud:4, grc:2 } },
+    ]
+  },
+  {
+    stage:"Stage 5", stageLabel:"Career & Values",
+    text:"Finally — what's your honest current skill level in cybersecurity?",
+    type:"choice",
+    options:[
+      { text:"Complete beginner — just getting started",              scores:{ grc:2, soc:1, cloud:1 } },
+      { text:"Some basics — know networking, a bit of Linux/Windows", scores:{ soc:2, web:1, ad:1 } },
+      { text:"Intermediate — done some CTFs or basic pen testing",    scores:{ web:2, ad:2, malware:1 } },
+      { text:"Comfortable — have hands-on experience in a specialty", scores:{ malware:2, aipen:2, dfir:2, ad:2 } },
+    ]
+  },
+];
+
+// ════════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════════
+let current = 0;
+let answers = new Array(QUESTIONS.length).fill(null);
+let scores = {};
+Object.keys(FIELDS).forEach(k => scores[k] = 0);
+
+// ════════════════════════════════════════════════════════
+//  RENDER QUESTION
+// ════════════════════════════════════════════════════════
+function renderQuestion(idx) {
+  const q = QUESTIONS[idx];
+  document.getElementById('stageName').textContent = q.stage;
+  document.getElementById('stageLabel').textContent = q.stageLabel;
+  document.getElementById('questionText').textContent = q.text;
+  document.getElementById('questionSub').textContent = q.sub || '';
+  document.getElementById('qCount').textContent = `${idx+1} / ${QUESTIONS.length}`;
+  document.getElementById('progressFill').style.width = `${((idx+1)/QUESTIONS.length)*100}%`;
+  document.getElementById('btnPrev').style.visibility = idx === 0 ? 'hidden' : 'visible';
+
+  const container = document.getElementById('optionsContainer');
+  container.innerHTML = '';
+
+  if (q.type === 'choice') {
+    const grid = document.createElement('div');
+    grid.className = 'options-grid' + (q.options.length > 3 ? '' : ' single-col');
+    const keys = ['A','B','C','D'];
+    q.options.forEach((opt, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'option-btn' + (answers[idx] === i ? ' selected' : '');
+      btn.innerHTML = `<span class="option-key">${keys[i]}</span><span>${opt.text}</span>`;
+      btn.addEventListener('click', () => selectOption(i, btn, grid));
+      grid.appendChild(btn);
+    });
+    container.appendChild(grid);
+    document.getElementById('btnNext').disabled = answers[idx] === null;
+
+  } else if (q.type === 'slider') {
+    const val = answers[idx] !== null ? answers[idx] : 3;
+    const wrap = document.createElement('div');
+    wrap.className = 'slider-wrap';
+    wrap.innerHTML = `
+      <div class="slider-labels">
+        ${q.labels.map(l=>`<span>${l}</span>`).join('')}
+      </div>
+      <input type="range" min="${q.min}" max="${q.max}" value="${val}" id="sliderInput"/>
+      <div class="slider-value" id="sliderVal">${q.labels[val-1]}</div>
+    `;
+    container.appendChild(wrap);
+    const slider = document.getElementById('sliderInput');
+    slider.addEventListener('input', () => {
+      const v = parseInt(slider.value);
+      document.getElementById('sliderVal').textContent = q.labels[v-1];
+      answers[idx] = v;
+    });
+    answers[idx] = val;
+    document.getElementById('btnNext').disabled = false;
+  }
+
+  // Keyboard shortcut A/B/C/D
+  document.onkeydown = (e) => {
+    if (q.type !== 'choice') return;
+    const map = {KeyA:0, KeyB:1, KeyC:2, KeyD:3};
+    if (map[e.code] !== undefined && map[e.code] < q.options.length) {
+      const grid = container.querySelector('.options-grid');
+      selectOption(map[e.code], grid.children[map[e.code]], grid);
+    }
+    if (e.code === 'Enter' && !document.getElementById('btnNext').disabled) nextQuestion();
+  };
+}
+
+function selectOption(i, btn, grid) {
+  grid.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  answers[current] = i;
+  document.getElementById('btnNext').disabled = false;
+}
+
+// ════════════════════════════════════════════════════════
+//  NAVIGATION
+// ════════════════════════════════════════════════════════
+function nextQuestion() {
+  if (current < QUESTIONS.length - 1) {
+    current++;
+    renderQuestion(current);
+  } else {
+    showResults();
+  }
+}
+function prevQuestion() {
+  if (current > 0) { current--; renderQuestion(current); }
+}
+
+document.getElementById('btnNext').addEventListener('click', nextQuestion);
+document.getElementById('btnPrev').addEventListener('click', prevQuestion);
+document.getElementById('startBtn').addEventListener('click', () => {
+  showScreen('screen-question');
+  renderQuestion(0);
+});
+document.getElementById('retryBtn').addEventListener('click', () => {
+  current = 0;
+  answers = new Array(QUESTIONS.length).fill(null);
+  Object.keys(scores).forEach(k => scores[k] = 0);
+  showScreen('screen-intro');
+});
+
+// ════════════════════════════════════════════════════════
+//  SCORING ALGORITHM
+// ════════════════════════════════════════════════════════
+function computeScores() {
+  const s = {};
+  Object.keys(FIELDS).forEach(k => s[k] = 0);
+
+  QUESTIONS.forEach((q, idx) => {
+    const ans = answers[idx];
+    if (ans === null) return;
+
+    if (q.type === 'choice') {
+      const opt = q.options[ans];
+      Object.entries(opt.scores).forEach(([field, val]) => {
+        s[field] = (s[field] || 0) + val;
+      });
+    } else if (q.type === 'slider') {
+      const val = ans;
+      const scoreMap = q.scores[val];
+      if (scoreMap) Object.entries(scoreMap).forEach(([field, v]) => {
+        s[field] = (s[field] || 0) + v;
+      });
+    }
+  });
+
+  return s;
+}
+
+// ════════════════════════════════════════════════════════
+//  RESULTS
+// ════════════════════════════════════════════════════════
+function showResults() {
+  const rawScores = computeScores();
+
+  // Normalize to percentages
+  const total = Object.values(rawScores).reduce((a,b) => a+b, 0);
+  const pcts = {};
+  Object.keys(rawScores).forEach(k => {
+    pcts[k] = total > 0 ? Math.round((rawScores[k] / total) * 100) : 0;
+  });
+
+  // Sort descending
+  const sorted = Object.entries(pcts).sort((a,b) => b[1]-a[1]);
+  const top5 = sorted.slice(0, 5);
+
+  const container = document.getElementById('resultsContainer');
+  container.innerHTML = '';
+
+  top5.forEach(([key, pct], rank) => {
+    const field = FIELDS[key];
+    const card = document.createElement('div');
+    card.className = 'result-card';
+    card.style.animationDelay = `${rank * 0.1}s`;
+    card.style.borderColor = rank === 0 ? field.color + '55' : '';
+
+    const traitTags = field.traits.map(t =>
+      `<span class="trait-tag" style="color:${field.color};border-color:${field.color}44;background:${field.color}11">${t}</span>`
+    ).join('');
+
+    card.innerHTML = `
+      <div class="result-rank ${rank===0?'top':''}">#${rank+1}</div>
+      <div class="result-icon">${field.icon}</div>
+      <div class="result-info">
+        <div class="result-name">${field.name}</div>
+        <div class="result-desc">${field.desc}</div>
+        <div class="result-traits">${traitTags}</div>
+      </div>
+      <div class="result-bar-wrap">
+        <div class="result-pct" style="color:${field.color}">${pct}%</div>
+        <div class="result-bar">
+          <div class="result-bar-fill" id="bar-${key}" style="background:${field.color}"></div>
+        </div>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+
+  showScreen('screen-results');
+
+  // Animate bars after render
+  setTimeout(() => {
+    top5.forEach(([key, pct]) => {
+      const bar = document.getElementById(`bar-${key}`);
+      if (bar) bar.style.width = pct + '%';
+    });
+  }, 100);
+}
+
+// ════════════════════════════════════════════════════════
+//  SCREEN SWITCHER
+// ════════════════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById(id);
+  el.classList.add('active');
+  el.style.animation = 'none';
+  el.offsetHeight; // reflow
+  el.style.animation = '';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ════════════════════════════════════════════════════════
+//  CURSOR
+// ════════════════════════════════════════════════════════
+const cursor = document.getElementById('cursor');
+const ring = document.getElementById('cursorRing');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove', e=>{ mx=e.clientX; my=e.clientY; });
+(function animateCursor(){
+  cursor.style.left=mx+'px'; cursor.style.top=my+'px';
+  rx+=(mx-rx)*0.13; ry+=(my-ry)*0.13;
+  ring.style.left=rx+'px'; ring.style.top=ry+'px';
+  requestAnimationFrame(animateCursor);
+})();
+document.addEventListener('mouseover', e => {
+  if (e.target.closest('button,a,input')) {
+    ring.style.transform='translate(-50%,-50%) scale(1.6)';
+  } else {
+    ring.style.transform='translate(-50%,-50%) scale(1)';
+  }
+});
+</script>
+</body>
+</html>

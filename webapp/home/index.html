@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>AstraPen – Find Your Path in Cybersecurity</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+    <style>
+            *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+            :root {
+            --purple: #9B30FF;
+            --purple-light: #C070FF;
+            --purple-dark: #6A0FD4;
+            --red: #E0242A;
+            --red-dark: #A01018;
+            --blue: #2A3A7A;
+            --blue-light: #3D5299;
+            --bg: #080810;
+            --bg2: #0D0D1A;
+            --surface: #111120;
+            --text: #F0EDF8;
+            --muted: #9990BB;
+            }
+
+            html { scroll-behavior: smooth; }
+
+            body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            overflow-x: hidden;
+            cursor: none;
+            }
+
+            /* Custom cursor */
+            .cursor {
+            width: 10px; height: 10px;
+            background: var(--purple);
+            border-radius: 50%;
+            position: fixed; top: 0; left: 0;
+            pointer-events: none; z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: transform 0.1s;
+            }
+            .cursor-ring {
+            width: 32px; height: 32px;
+            border: 1.5px solid var(--purple-light);
+            border-radius: 50%;
+            position: fixed; top: 0; left: 0;
+            pointer-events: none; z-index: 9998;
+            transform: translate(-50%, -50%);
+            transition: all 0.18s ease;
+            opacity: 0.6;
+            }
+
+            /* ─── NAVBAR ─── */
+            nav {
+            position: fixed; top: 0; left: 0; right: 0;
+            z-index: 100;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 18px 60px;
+            background: rgba(8,8,16,0.7);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid rgba(155,48,255,0.12);
+            animation: fadeDown 0.8s ease both;
+            }
+            @keyframes fadeDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to   { opacity: 1; transform: translateY(0); }
+            }
+            .logo {
+            font-family: 'Syne', sans-serif;
+            font-weight: 800; font-size: 1.3rem;
+            display: flex; align-items: center; gap: 8px;
+            }
+            .logo span { color: var(--purple); }
+            .logo-icon {
+            width: 30px; height: 30px;
+            background: linear-gradient(135deg, var(--purple-dark), var(--purple-light));
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px;
+            }
+            .nav-links { display: flex; gap: 36px; }
+            .nav-links a {
+            color: var(--muted); text-decoration: none;
+            font-size: 0.9rem; letter-spacing: 0.02em;
+            transition: color 0.2s;
+            position: relative;
+            }
+            .nav-links a::after {
+            content: ''; position: absolute; bottom: -3px; left: 0;
+            width: 0; height: 1.5px; background: var(--purple);
+            transition: width 0.25s ease;
+            }
+            .nav-links a:hover { color: var(--text); }
+            .nav-links a:hover::after { width: 100%; }
+            .nav-cta {
+            background: var(--purple);
+            color: #fff; border: none; border-radius: 30px;
+            padding: 10px 22px; font-family: 'DM Sans', sans-serif;
+            font-size: 0.88rem; font-weight: 500;
+            cursor: none; transition: all 0.25s ease;
+            box-shadow: 0 0 18px rgba(155,48,255,0.4);
+            }
+            .nav-cta:hover {
+            background: var(--purple-light);
+            box-shadow: 0 0 30px rgba(155,48,255,0.7);
+            transform: scale(1.04);
+            }
+
+            /* ─── HERO ─── */
+            .hero {
+            min-height: 100vh;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            text-align: center;
+            padding: 120px 40px 80px;
+            position: relative;
+            overflow: hidden;
+            }
+            .hero-bg {
+            position: absolute; inset: 0; z-index: 0;
+            background: radial-gradient(ellipse 80% 60% at 50% 30%, rgba(106,15,212,0.28) 0%, transparent 70%),
+                        radial-gradient(ellipse 50% 40% at 80% 80%, rgba(155,48,255,0.1) 0%, transparent 60%);
+            }
+            /* Animated grid lines */
+            .hero-grid {
+            position: absolute; inset: 0; z-index: 0;
+            background-image:
+                linear-gradient(rgba(155,48,255,0.06) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(155,48,255,0.06) 1px, transparent 1px);
+            background-size: 60px 60px;
+            animation: gridMove 12s linear infinite;
+            }
+            @keyframes gridMove {
+            from { transform: translateY(0); }
+            to   { transform: translateY(60px); }
+            }
+            /* Floating orbs */
+            .orb {
+            position: absolute; border-radius: 50%;
+            filter: blur(60px); z-index: 0; pointer-events: none;
+            }
+            .orb1 {
+            width: 400px; height: 400px;
+            background: rgba(106,15,212,0.2);
+            top: -100px; left: -100px;
+            animation: orbFloat 8s ease-in-out infinite alternate;
+            }
+            .orb2 {
+            width: 300px; height: 300px;
+            background: rgba(155,48,255,0.15);
+            bottom: 0; right: -80px;
+            animation: orbFloat 10s ease-in-out infinite alternate-reverse;
+            }
+            @keyframes orbFloat {
+            from { transform: translate(0, 0) scale(1); }
+            to   { transform: translate(30px, 30px) scale(1.1); }
+            }
+            .hero-content { position: relative; z-index: 1; }
+            .hero-tag {
+            display: inline-block;
+            background: rgba(155,48,255,0.12);
+            border: 1px solid rgba(155,48,255,0.3);
+            color: var(--purple-light);
+            padding: 5px 16px; border-radius: 30px;
+            font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase;
+            margin-bottom: 24px;
+            animation: fadeUp 0.8s 0.3s ease both;
+            }
+            .hero h1 {
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(2.6rem, 6vw, 5rem);
+            font-weight: 800; line-height: 1.1;
+            animation: fadeUp 0.8s 0.5s ease both;
+            }
+            .hero h1 .accent { color: var(--purple-light); }
+            .hero-sub {
+            margin: 20px auto 0;
+            max-width: 520px;
+            color: var(--muted); font-size: 1rem; line-height: 1.7;
+            animation: fadeUp 0.8s 0.7s ease both;
+            }
+            .hero-btns {
+            display: flex; gap: 14px;
+            justify-content: center; flex-wrap: wrap;
+            margin-top: 36px;
+            animation: fadeUp 0.8s 0.9s ease both;
+            }
+            .btn-primary {
+            background: var(--purple);
+            color: #fff; border: none; border-radius: 30px;
+            padding: 14px 32px; font-family: 'DM Sans', sans-serif;
+            font-size: 0.95rem; font-weight: 500; cursor: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 24px rgba(155,48,255,0.5);
+            }
+            .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(155,48,255,0.7);
+            background: var(--purple-light);
+            }
+            .btn-outline {
+            background: transparent;
+            color: var(--text); border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 30px;
+            padding: 14px 32px; font-family: 'DM Sans', sans-serif;
+            font-size: 0.95rem; cursor: none;
+            transition: all 0.3s ease;
+            }
+            .btn-outline:hover {
+            border-color: var(--purple);
+            color: var(--purple-light);
+            transform: translateY(-2px);
+            }
+            /* Scroll indicator */
+            .scroll-hint {
+            position: absolute; bottom: 30px; left: 50%;
+            transform: translateX(-50%);
+            display: flex; flex-direction: column; align-items: center; gap: 6px;
+            color: var(--muted); font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase;
+            animation: fadeUp 1s 1.2s ease both;
+            z-index: 1;
+            }
+            .scroll-line {
+            width: 1px; height: 40px;
+            background: linear-gradient(to bottom, var(--purple), transparent);
+            animation: scrollPulse 1.8s ease-in-out infinite;
+            }
+            @keyframes scrollPulse {
+            0%, 100% { opacity: 0.3; transform: scaleY(1); }
+            50% { opacity: 1; transform: scaleY(1.2); }
+            }
+            @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(28px); }
+            to   { opacity: 1; transform: translateY(0); }
+            }
+
+            /* ─── HOW IT HELPS ─── */
+            .section { padding: 100px 60px; }
+            .section-label {
+            text-align: center;
+            font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase;
+            color: var(--muted); margin-bottom: 12px;
+            }
+            .section-title {
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 700; text-align: center;
+            margin-bottom: 70px;
+            }
+            .section-title .accent { color: var(--purple-light); }
+
+            .steps-container {
+            max-width: 700px; margin: 0 auto;
+            display: flex; flex-direction: column; gap: 0;
+            position: relative;
+            }
+            .steps-line {
+            position: absolute; left: 29px; top: 30px; bottom: 30px;
+            width: 2px;
+            background: linear-gradient(to bottom, var(--purple), rgba(155,48,255,0.1));
+            }
+            .step {
+            display: grid; grid-template-columns: 60px 1fr;
+            gap: 28px; align-items: flex-start;
+            padding: 20px 0;
+            opacity: 0; transform: translateX(-30px);
+            transition: all 0.6s ease;
+            }
+            .step.visible { opacity: 1; transform: translateX(0); }
+            .step-num {
+            width: 60px; height: 60px; border-radius: 50%;
+            background: var(--surface);
+            border: 2px solid var(--purple);
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Syne', sans-serif;
+            font-size: 1.1rem; font-weight: 700; color: var(--purple-light);
+            box-shadow: 0 0 20px rgba(155,48,255,0.3);
+            flex-shrink: 0; position: relative; z-index: 1;
+            }
+            .step-body {
+            background: var(--surface);
+            border: 1px solid rgba(155,48,255,0.15);
+            border-radius: 14px; padding: 24px 28px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            }
+            .step-body:hover {
+            border-color: rgba(155,48,255,0.4);
+            box-shadow: 0 4px 30px rgba(155,48,255,0.1);
+            }
+            .step-body h3 {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.15rem; font-weight: 700;
+            margin-bottom: 8px;
+            }
+            .step-body p { color: var(--muted); font-size: 0.92rem; line-height: 1.7; }
+            .step-tag {
+            display: inline-block; margin-top: 10px;
+            background: rgba(155,48,255,0.12);
+            color: var(--purple-light); border-radius: 20px;
+            padding: 3px 12px; font-size: 0.75rem;
+            border: 1px solid rgba(155,48,255,0.2);
+            }
+
+            /* ─── GUIDE / CARDS ─── */
+            .guide-section {
+            padding: 80px 25%;
+            background: var(--bg2);
+            }
+            .category-label {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.1rem; font-weight: 700;
+            margin-bottom: 6px;
+            }
+            .category-desc {
+            color: var(--muted); font-size: 0.85rem; margin-bottom: 28px;
+            }
+            .cards-row {
+                display: flex;
+                flex-wrap: wrap;         /* ✅ allows wrapping to the next line */
+                gap: 10px;
+                margin-bottom: 50px;
+                align-items: stretch;
+                width: 100%;
+            }
+
+            /* ── CARD ── */
+            .card-wrap {
+                flex: 1 1 calc(25% - 10px);  /* 25% width minus the gap */
+                height: 380px;
+                padding-left: 1rem;
+                display: flex;
+                align-items: flex-end;
+                justify-content: flex-start;
+                padding-bottom: 22px;
+                position: relative;
+                overflow: hidden;
+                cursor: none;
+                transition: transform 0.35s ease, box-shadow 0.35s ease;
+            }
+
+            .card-wrap:hover { transform: translateY(-6px); }
+
+            /* White overlay that fades in on hover */
+            .card-wrap::after {
+            content: ''; position: absolute; inset: 0;
+            background: #fff;
+            opacity: 0;
+            transition: opacity 0.35s ease;
+            z-index: 0;
+            }
+            .card-wrap:hover::after { opacity: 1; }
+
+            /* Blue — fundamentals */
+            .card-blue {
+            background: linear-gradient(175deg, #3B5BAD 0%, #1B2F7A 60%, #0F1A4A 100%);
+            box-shadow: 0 6px 22px rgba(27,47,122,0.5);
+            }
+            .card-blue:hover { box-shadow: 0 12px 36px rgba(27,47,122,0.35); }
+
+            /* Red — specialized */
+            .card-red {
+            background: linear-gradient(175deg, #CC1A1A 0%, #8B0000 60%, #4A0000 100%);
+            box-shadow: 0 6px 22px rgba(139,0,0,0.5);
+            }
+            .card-red:hover { box-shadow: 0 12px 36px rgba(180,0,0,0.3); }
+
+            /* Card text — rotated vertical */
+            .card-label {
+            font-family: Arial, sans-serif;
+            font-weight: 700;
+            font-size: 2.5rem;
+            line-height: 1.1;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            transform: rotate(180deg);
+            color: #fff;
+            text-align: left;
+            letter-spacing: 0.01em;
+            position: relative; z-index: 1;
+            pointer-events: none;
+            transition: color 0.35s ease;
+            }
+
+            /* On hover: text flips to the card's bg color */
+            .card-blue:hover .card-label { color: #1B2F7A; }
+            .card-red:hover  .card-label { color: #8B0000; }
+
+            /* Ghost / blank placeholder cards */
+            .card-ghost {
+            background: transparent;
+            border-radius: 12px;
+            pointer-events: none;
+            cursor: default;
+            }
+            .card-ghost::after { display: none; }
+            .card-ghost:hover { transform: none; box-shadow: none; }
+
+            /* ─── ABOUT ─── */
+            .about-section { padding: 100px 60px; }
+            .about-grid {
+            max-width: 900px; margin: 0 auto;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 30px;
+            }
+            .about-card {
+            background: var(--surface);
+            border: 1px solid rgba(155,48,255,0.12);
+            border-radius: 16px; padding: 30px;
+            opacity: 0; transform: translateY(24px);
+            transition: all 0.6s ease;
+            }
+            .about-card.visible { opacity: 1; transform: translateY(0); }
+            .about-card:hover {
+            border-color: rgba(155,48,255,0.3);
+            box-shadow: 0 4px 30px rgba(155,48,255,0.08);
+            }
+            .about-card-icon {
+            font-size: 1.5rem; margin-bottom: 14px;
+            }
+            .about-card h3 {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.05rem; font-weight: 700;
+            margin-bottom: 10px; color: var(--purple-light);
+            }
+            .about-card p { color: var(--muted); font-size: 0.88rem; line-height: 1.75; }
+
+            /* ─── CONTACT ─── */
+            .contact-section {
+            padding: 100px 60px;
+            background: var(--bg2);
+            }
+            .contact-form {
+            max-width: 640px; margin: 0 auto;
+            display: flex; flex-direction: column; gap: 16px;
+            }
+            .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+            .form-group { display: flex; flex-direction: column; gap: 7px; }
+            .form-group label {
+            font-size: 0.8rem; color: var(--muted); letter-spacing: 0.05em;
+            }
+            .form-group input,
+            .form-group textarea {
+            background: var(--surface);
+            border: 1px solid rgba(155,48,255,0.18);
+            border-radius: 10px; padding: 12px 16px;
+            color: var(--text); font-family: 'DM Sans', sans-serif;
+            font-size: 0.9rem; outline: none;
+            transition: border-color 0.25s, box-shadow 0.25s;
+            }
+            .form-group input:focus,
+            .form-group textarea:focus {
+            border-color: var(--purple);
+            box-shadow: 0 0 14px rgba(155,48,255,0.2);
+            }
+            .form-group textarea { resize: vertical; min-height: 110px; }
+            .form-submit {
+            align-self: center;
+            background: var(--purple); color: #fff;
+            border: none; border-radius: 30px;
+            padding: 14px 44px; font-family: 'DM Sans', sans-serif;
+            font-size: 0.95rem; font-weight: 500; cursor: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(155,48,255,0.4);
+            margin-top: 8px;
+            }
+            .form-submit:hover {
+            background: var(--purple-light);
+            box-shadow: 0 6px 28px rgba(155,48,255,0.6);
+            transform: translateY(-2px);
+            }
+
+            /* ─── FOOTER ─── */
+            footer {
+            text-align: center; padding: 30px;
+            color: var(--muted); font-size: 0.8rem;
+            border-top: 1px solid rgba(155,48,255,0.1);
+            }
+            footer span { color: var(--purple-light); }
+
+            /* Noise overlay */
+            body::after {
+            content: ''; position: fixed; inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+            opacity: 0.025; pointer-events: none; z-index: 9997;
+            }
+
+            /* Responsive */
+            @media (max-width: 768px) {
+            nav { padding: 16px 24px; }
+            .nav-links { display: none; }
+            .section, .guide-section, .about-section, .contact-section { padding: 70px 24px; }
+            .about-grid { grid-template-columns: 1fr; }
+            .form-row { grid-template-columns: 1fr; }
+            .card { min-width: 90px; height: 150px; font-size: 0.85rem; }
+            .guide-section {
+            padding: 80px 2.5%;
+            background: var(--bg2);
+            }
+                .card-label {
+                font-family: Arial, sans-serif;
+                font-weight: 700;
+                font-size: 2rem;
+                line-height: 1.1;
+                writing-mode: vertical-rl;
+                text-orientation: mixed;
+                transform: rotate(180deg);
+                color: #fff;
+                text-align: left;
+                letter-spacing: 0.01em;
+                position: relative; z-index: 1;
+                pointer-events: none;
+                transition: color 0.35s ease;
+                }
+            }
+    </style>
+</head>
+<body>
+
+  <!-- Custom cursor -->
+  <div class="cursor" id="cursor"></div>
+  <div class="cursor-ring" id="cursorRing"></div>
+
+  <!-- ── NAVBAR ── -->
+  <nav>
+    <div class="logo">
+      <div class="logo-icon">🔐</div>
+      Astra<span>Pen</span>
+    </div>
+    <div class="nav-links">
+      <a href="#home">Home</a>
+      <a href="#how">About us</a>
+      <a href="#contact">Contact us</a>
+      <p>|</p>
+      <a href="#contact">Study Materials</a>
+    </div>
+    <button class="nav-cta" onclick="window.location.href='skill_finder.html'">Skill Finder</button>
+  </nav>
+
+  <!-- ── HERO ── -->
+  <section class="hero" id="home">
+    <div class="hero-bg"></div>
+    <div class="hero-grid"></div>
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+
+    <div class="hero-content">
+      <div class="hero-tag">⚡ AI-Powered Guidance Platform</div>
+      <h1>
+        Find Your Path<br/>
+        in <span class="accent">Cybersecurity.</span>
+      </h1>
+      <p class="hero-sub">
+        AI-powered guidance that finds your strengths, builds your skills,
+        and puts you on the path to real opportunities.
+      </p>
+      <div class="hero-btns">
+        <button class="btn-outline">Explore the guide →</button>
+      </div>
+    </div>
+
+    <div class="scroll-hint">
+      <div class="scroll-line"></div>
+      scroll
+    </div>
+  </section>
+
+  <!-- ── HOW IT HELPS ── -->
+  <section class="section" id="how">
+    <p class="section-label">From start to end and back</p>
+    <h2 class="section-title">How <span class="accent">AstraPen</span> Helps you?</h2>
+
+    <div class="steps-container">
+      <div class="steps-line"></div>
+
+      <div class="step" data-step>
+        <div class="step-num">01</div>
+        <div class="step-body">
+          <h3>Discover your true direction</h3>
+          <p>Find the cybersecurity path that actually fits you — your personality, your skills, your goals.</p>
+          <span class="step-tag">Basically helps you see a lot better</span>
+        </div>
+      </div>
+
+      <div class="step" data-step>
+        <div class="step-num">02</div>
+        <div class="step-body">
+          <h3>Learn with the right resources</h3>
+          <p>Personal and structured roadmaps that turn you into a specialist, without creating a lot of bumps.</p>
+          <span class="step-tag">Instead of creating more bumps</span>
+        </div>
+      </div>
+
+      <div class="step" data-step>
+        <div class="step-num">03</div>
+        <div class="step-body">
+          <h3>Turn skills into income</h3>
+          <p>Reach your potential and get paid for your expertise. Build a clear path toward real opportunities.</p>
+          <span class="step-tag">I know who doesn't like earning 💸</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── GUIDE ── -->
+  <section class="guide-section" id="guide">
+    <h2 class="section-title">Our <span class="accent">AstraPen</span> guide include</h2>
+
+    <!-- Fundamentals -->
+    <div style="width: 100%">
+      <p class="category-label" style="color:#8898CC;">Fundamentals</p>
+      <p class="category-desc">The base to become a pro</p>
+      <div class="cards-row">
+        <div class="card-wrap card-blue" onclick="window.location.href='computer_basics.html'"><span class="card-label">Computer Basics</span></div>
+        <div class="card-wrap card-blue" onclick="window.location.href='linux_basics.html'"><span class="card-label">Linux Basics</span></div>
+        <div class="card-wrap card-blue" onclick="window.location.href='win_basics.html'"><span class="card-label">Windows Basics</span></div>
+        <div class="card-wrap card-blue" onclick="window.location.href='cyber_basics.html'"><span class="card-label">Cyber Basics</span></div>
+        <div class="card-wrap card-blue" onclick="window.location.href='net_basics.html'"><span class="card-label">Networking Basics</span></div>
+        <div class="card-wrap card-blue" onclick="window.location.href='pynb.html'"><span class="card-label">Intro to Python & Bash</span></div>
+        <div class="card-wrap card-ghost"></div>
+        <div class="card-wrap card-ghost"></div>
+      </div>
+
+      <!-- Specialized -->
+      <p class="category-label" style="color:#D94040;">Specialized Fields</p>
+      <p class="category-desc">This is where you learn to actually earn money</p>
+      <div class="cards-row">
+        <div class="card-wrap card-red"><span class="card-label">Web & API Exploitation</span></div>
+        <div class="card-wrap card-red"><span class="card-label">SOC Analyst</span></div>
+        <div class="card-wrap card-red"><span class="card-label">Malware Analyst</span></div>
+        <div class="card-wrap card-red"><span class="card-label">DFIR</span></div>
+        <div class="card-wrap card-red"><span class="card-label">Cloud Security & DevSecOps</span></div>
+        <div class="card-wrap card-red"><span class="card-label">AI Pen Testing</span></div>
+        <div class="card-wrap card-red"><span class="card-label">GRC</span></div>
+        <div class="card-wrap card-red"><span class="card-label">Active Directory Exploit</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── ABOUT ── -->
+  <section class="about-section" id="about">
+    <h2 class="section-title">About <span class="accent">Us</span></h2>
+
+    <div class="about-grid">
+      <div class="about-card" data-about>
+        <div class="about-card-icon">🧭</div>
+        <h3>Who Are We?</h3>
+        <p>AstraPen is a student-built platform created to guide beginners and cybersecurity learners toward the right path. Run entirely by one person — a 3rd-year cybersecurity student who went through the same confusion, struggle, and lack of direction that many students face today.</p>
+      </div>
+      <div class="about-card" data-about>
+        <div class="about-card-icon">⚡</div>
+        <h3>Why Are We?</h3>
+        <p>AstraPen was created because of the struggle to find a clear direction in cybersecurity. For almost two years, not knowing what to focus on, which skills mattered, or which career path fit. AstraPen exists to give students something better: real guidance, early direction, and the right resources from day one.</p>
+      </div>
+      <div class="about-card" data-about style="grid-column: 1 / -1;">
+        <div class="about-card-icon">🎯</div>
+        <h3>What Is Our Goal?</h3>
+        <p>Our goal is simple: help students discover the ideal cybersecurity path early, and give them everything they need to start specializing with confidence. AstraPen aims to guide learners toward the right specialization, provide structured collections of the best courses, connect learners with valuable certificates and tools, make cybersecurity education accessible to everyone, and expand beyond cybersecurity into computer engineering and more technical fields in the future.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── CONTACT ── -->
+  <section class="contact-section" id="contact">
+    <p class="section-label">In case you have some credits to</p>
+    <h2 class="section-title"><span class="accent">Contact Us</span></h2>
+
+    <div class="contact-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label>FIRST NAME</label>
+          <input type="text" placeholder="Mahir" />
+        </div>
+        <div class="form-group">
+          <label>LAST NAME</label>
+          <input type="text" placeholder="Asif" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>EMAIL</label>
+        <input type="email" placeholder="asilmahir907@gmail.com" />
+      </div>
+      <div class="form-group">
+        <label>MESSAGE</label>
+        <textarea placeholder="Your message here..."></textarea>
+      </div>
+      <button class="form-submit">Send it →</button>
+    </div>
+  </section>
+
+  <!-- ── FOOTER ── -->
+  <footer>
+    <p>© 2025 AstraPen. All rights reserved. — Developed by <span>Mahir Asif</span></p>
+  </footer>
+
+  <script>
+    // Custom cursor
+    const cursor = document.getElementById('cursor');
+    const ring = document.getElementById('cursorRing');
+    let mx = 0, my = 0, rx = 0, ry = 0;
+    document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+    function animateCursor() {
+      cursor.style.left = mx + 'px'; cursor.style.top = my + 'px';
+      rx += (mx - rx) * 0.12; ry += (my - ry) * 0.12;
+      ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+      requestAnimationFrame(animateCursor);
+    }
+    animateCursor();
+    
+
+    // Scroll reveal
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+    }, { threshold: 0.15 });
+    document.querySelectorAll('[data-step], [data-about]').forEach(el => obs.observe(el));
+
+    // Stagger step animations
+    document.querySelectorAll('[data-step]').forEach((el, i) => {
+      el.style.transitionDelay = `${i * 0.15}s`;
+    });
+    document.querySelectorAll('[data-about]').forEach((el, i) => {
+      el.style.transitionDelay = `${i * 0.12}s`;
+    });
+
+    // Card click toggle
+    document.querySelectorAll('.card-wrap').forEach(wrap => {
+      wrap.addEventListener('click', () => wrap.classList.toggle('active'));
+    });
+
+    // Cursor hover targets
+    document.querySelectorAll('button, a, .card-wrap').forEach(el => {
+      el.addEventListener('mouseenter', () => { ring.style.transform = 'translate(-50%, -50%) scale(1.6)'; });
+      el.addEventListener('mouseleave', () => { ring.style.transform = 'translate(-50%, -50%) scale(1)'; });
+    });
+  </script>
+</body>
+</html>

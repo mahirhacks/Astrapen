@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Linux Basics – AstraPen</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --purple: #9B30FF;
+      --purple-light: #C070FF;
+      --purple-dark: #6A0FD4;
+      --blue: #1B2F7A;
+      --blue-mid: #3B5BAD;
+      --blue-light: #7B9FE0;
+      --bg: #080810;
+      --bg2: #0D0D1A;
+      --surface: #111120;
+      --surface2: #16162A;
+      --border: rgba(155,48,255,0.13);
+      --text: #F0EDF8;
+      --muted: #9990BB;
+      --sidebar-w: 290px;
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      overflow-x: hidden;
+      cursor: none;
+    }
+
+    /* ── CURSOR ── */
+    .cursor { width: 9px; height: 9px; background: var(--purple); border-radius: 50%; position: fixed; top:0; left:0; pointer-events:none; z-index:9999; transform:translate(-50%,-50%); }
+    .cursor-ring { width: 30px; height: 30px; border: 1.5px solid var(--purple-light); border-radius: 50%; position: fixed; top:0; left:0; pointer-events:none; z-index:9998; transform:translate(-50%,-50%); transition: all 0.16s ease; opacity:0.6; }
+
+    /* ── NAVBAR ── */
+    nav {
+      position: fixed; top:0; left:0; right:0; z-index:200;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 50px;
+      background: rgba(8,8,16,0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+    .logo { font-family:'Syne',sans-serif; font-weight:800; font-size:1.2rem; display:flex; align-items:center; gap:8px; text-decoration:none; color:var(--text); }
+    .logo-icon { width:28px; height:28px; background:linear-gradient(135deg,var(--purple-dark),var(--purple-light)); border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:13px; }
+    .logo span { color:var(--purple); }
+    .nav-back { display:flex; align-items:center; gap:8px; color:var(--muted); text-decoration:none; font-size:0.88rem; transition:color 0.2s; }
+    .nav-back:hover { color:var(--text); }
+    .nav-back svg { width:16px; height:16px; }
+    .nav-right { display:flex; align-items:center; gap:20px; }
+    .nav-progress-label { font-size:0.78rem; color:var(--muted); }
+    .nav-progress-bar { width:120px; height:4px; background:rgba(155,48,255,0.15); border-radius:4px; overflow:hidden; }
+    .nav-progress-fill { height:100%; background:linear-gradient(90deg,var(--purple-dark),var(--purple-light)); border-radius:4px; transition:width 0.4s ease; width:0%; }
+
+    /* ── LAYOUT ── */
+    .layout {
+      display: flex;
+      padding-top: 61px;
+      min-height: 100vh;
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: var(--sidebar-w);
+      min-width: var(--sidebar-w);
+      background: var(--bg2);
+      border-right: 1px solid var(--border);
+      position: fixed; top: 61px; left: 0; bottom: 0;
+      overflow-y: auto; z-index: 100;
+      padding: 28px 0 40px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(155,48,255,0.25) transparent;
+    }
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-thumb { background: rgba(155,48,255,0.25); border-radius:4px; }
+
+    .sidebar-header {
+      padding: 0 22px 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 14px;
+    }
+    .sidebar-chapter {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.7rem; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--blue-light); margin-bottom: 4px;
+    }
+    .sidebar-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem; font-weight: 700;
+      color: var(--text);
+    }
+
+    /* Section group */
+    .sidebar-group { margin-bottom: 4px; }
+    .sidebar-section-btn {
+      width: 100%; padding: 10px 22px;
+      background: none; border: none;
+      display: flex; align-items: center; justify-content: space-between;
+      cursor: none; text-align: left;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.82rem; font-weight: 700;
+      color: var(--muted);
+      transition: color 0.2s, background 0.2s;
+      gap: 8px;
+    }
+    .sidebar-section-btn:hover { color: var(--text); background: rgba(155,48,255,0.06); }
+    .sidebar-section-btn.active { color: var(--blue-light); }
+    .sidebar-section-num {
+      font-size: 0.7rem; color: var(--purple);
+      font-family: 'DM Sans', sans-serif; font-weight: 500;
+      flex-shrink: 0;
+    }
+    .sidebar-chevron { width:14px; height:14px; flex-shrink:0; transition:transform 0.25s ease; opacity:0.5; }
+    .sidebar-section-btn.open .sidebar-chevron { transform: rotate(180deg); }
+
+    /* Sub-items */
+    .sidebar-items {
+      max-height: 0; overflow: hidden;
+      transition: max-height 0.35s cubic-bezier(0.4,0,0.2,1);
+    }
+    .sidebar-items.open { max-height: 600px; }
+    .sidebar-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 7px 22px 7px 36px;
+      text-decoration: none;
+      font-size: 0.8rem; color: var(--muted);
+      transition: color 0.2s, background 0.2s;
+      border-left: 2px solid transparent;
+      position: relative;
+    }
+    .sidebar-item:hover { color: var(--text); background: rgba(155,48,255,0.05); }
+    .sidebar-item.active {
+      color: var(--text);
+      border-left-color: var(--blue-mid);
+      background: rgba(59,91,173,0.08);
+    }
+    .sidebar-item-num { font-size: 0.68rem; color: var(--purple-dark); flex-shrink:0; }
+    /* Completion dot */
+    .sidebar-item::after {
+      content: ''; position: absolute; right: 16px;
+      width: 6px; height: 6px; border-radius: 50%;
+      background: transparent; border: 1px solid rgba(155,48,255,0.25);
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .sidebar-item.done::after { background: var(--purple); border-color: var(--purple); }
+    .sidebar-item.done {
+    color: var(--text);
+    background: rgba(155,48,255,0.08);
+    border-left-color: var(--purple);
+    }
+    .sidebar-item.done .sidebar-item-num { color: var(--purple-light); }
+
+    /* ── MAIN CONTENT ── */
+    .main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      padding: 52px 64px 100px;
+      max-width: 860px;
+    }
+
+    /* Hero banner */
+    .module-hero {
+      background: linear-gradient(135deg, #0F1A4A 0%, #1B2F7A 50%, #0a0a1a 100%);
+      border: 1px solid rgba(59,91,173,0.35);
+      border-radius: 18px;
+      padding: 40px 44px;
+      margin-bottom: 52px;
+      position: relative; overflow: hidden;
+    }
+    .module-hero::before {
+      content: ''; position: absolute;
+      top: -60px; right: -60px;
+      width: 260px; height: 260px;
+      background: radial-gradient(circle, rgba(59,91,173,0.25) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+    .module-hero-tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(59,91,173,0.25); border: 1px solid rgba(91,121,193,0.4);
+      color: var(--blue-light); border-radius: 20px;
+      padding: 4px 14px; font-size: 0.72rem; letter-spacing: 0.08em;
+      text-transform: uppercase; margin-bottom: 16px;
+    }
+    .module-hero h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 2.2rem; font-weight: 800; margin-bottom: 10px;
+    }
+    .module-hero-sub { color: var(--muted); font-size: 0.95rem; line-height: 1.7; max-width: 480px; }
+    .module-hero-meta {
+      display: flex; gap: 24px; margin-top: 22px; flex-wrap: wrap;
+    }
+    .meta-item { display:flex; align-items:center; gap:6px; font-size:0.8rem; color:var(--muted); }
+    .meta-item svg { width:14px; height:14px; opacity:0.6; }
+
+    /* Section heading */
+    .section-block { margin-bottom: 64px; scroll-margin-top: 90px; }
+    .section-tag {
+      display: inline-block;
+      font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--blue-light); margin-bottom: 8px;
+    }
+    .section-heading {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.6rem; font-weight: 800;
+      margin-bottom: 28px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* Lesson card */
+    .lesson-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      margin-bottom: 14px;
+      overflow: hidden;
+      transition: border-color 0.25s;
+    }
+    .lesson-card:hover { border-color: rgba(59,91,173,0.4); }
+
+    .lesson-header {
+      display: flex; align-items: center; gap: 14px;
+      padding: 18px 22px; cursor: none;
+      user-select: none;
+    }
+    .lesson-num {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.72rem; font-weight: 700;
+      color: var(--blue-light);
+      background: rgba(59,91,173,0.15);
+      border: 1px solid rgba(59,91,173,0.3);
+      border-radius: 6px; padding: 3px 8px;
+      flex-shrink: 0;
+    }
+    .lesson-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.97rem; font-weight: 700;
+      flex: 1;
+    }
+    .lesson-toggle {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(155,48,255,0.1); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: background 0.2s, transform 0.25s;
+      cursor: none;
+    }
+    .lesson-card.open .lesson-toggle { background: var(--purple); transform: rotate(45deg); }
+    .lesson-toggle svg { width:12px; height:12px; }
+
+    .lesson-body {
+      max-height: 0; overflow: hidden;
+      transition: max-height 0.4s cubic-bezier(0.4,0,0.2,1);
+      border-top: 0px solid var(--border);
+    }
+    .lesson-card.open .lesson-body {
+      max-height: 900px;
+      border-top-width: 1px;
+    }
+    .lesson-body-inner { padding: 22px 24px 26px; }
+
+    /* Description area */
+    .desc-area {
+      background: var(--bg2);
+      border: 1px dashed rgba(155,48,255,0.2);
+      border-radius: 10px;
+      padding: 16px 18px;
+      margin-bottom: 20px;
+      font-size: 0.88rem; color: var(--muted);
+      line-height: 1.75;
+    }
+    /* ✏️ EDIT MARKER — replace the placeholder text inside .desc-area with your own description */
+    .desc-placeholder {
+      display: flex; align-items: flex-start; gap: 10px;
+      color: rgba(155,48,255,0.5);
+      font-style: italic; font-size: 0.83rem;
+    }
+    .desc-placeholder span { font-style: normal; font-size: 1rem; }
+
+    /* Resources area */
+    .resources-area { display: flex; flex-direction: column; gap: 10px; }
+    .resources-label {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 4px;
+    }
+
+    /* Resource link row */
+    .resource-link {
+      display: flex; align-items: center; gap: 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 16px;
+      text-decoration: none; color: var(--text);
+      transition: border-color 0.25s, background 0.25s;
+      font-size: 0.87rem;
+    }
+    .resource-link:hover { border-color: rgba(155,48,255,0.4); background: rgba(155,48,255,0.06); }
+    .resource-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; flex-shrink: 0;
+    }
+    .resource-icon.yt  { background: rgba(255,0,0,0.15); }
+    .resource-icon.web { background: rgba(59,91,173,0.2); }
+    .resource-icon.doc { background: rgba(155,48,255,0.15); }
+    .resource-info { flex:1; }
+    .resource-name { font-weight: 500; font-size: 0.88rem; }
+    /* ✏️ EDIT MARKER — replace href="#" and resource-name text with actual URLs and titles */
+    .resource-sub { font-size: 0.75rem; color: var(--muted); margin-top: 1px; }
+    .resource-arrow { color: var(--muted); font-size: 0.8rem; }
+
+    /* Mark done button */
+    .done-btn {
+      margin-top: 18px;
+      display: inline-flex; align-items: center; gap: 8px;
+      background: transparent; border: 1px solid rgba(59,91,173,0.35);
+      color: var(--blue-light); border-radius: 20px;
+      padding: 7px 18px; font-family: 'DM Sans', sans-serif;
+      font-size: 0.8rem; cursor: none;
+      transition: all 0.25s;
+    }
+    .done-btn:hover { background: rgba(59,91,173,0.15); border-color: var(--blue-mid); }
+    .done-btn.marked { background: rgba(59,91,173,0.2); border-color: var(--blue-mid); color: var(--text); }
+    .done-btn svg { width:13px; height:13px; }
+
+    /* ── NOISE OVERLAY ── */
+    body::after {
+      content:''; position:fixed; inset:0;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      opacity:0.022; pointer-events:none; z-index:9997;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; padding: 36px 24px 80px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- ── NAVBAR ── -->
+<nav>
+  <a href="index.html" class="logo">
+    <div class="logo-icon">🔐</div>
+    Astra<span>Pen</span>
+  </a>
+  <a href="index.html" class="nav-back">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+    Back to Guide
+  </a>
+  <div class="nav-right">
+    <span class="nav-progress-label">Progress</span>
+    <div class="nav-progress-bar"><div class="nav-progress-fill" id="progressFill"></div></div>
+  </div>
+</nav>
+
+<!-- ── LAYOUT ── -->
+<div class="layout">
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-chapter">Chapter 2</div>
+      <div class="sidebar-title">Linux Basics</div>
+    </div>
+
+    <!-- JS builds sidebar from data — see script below -->
+    <div id="sidebarNav"></div>
+  </aside>
+
+  <!-- ── MAIN ── -->
+  <main class="main">
+
+    <!-- Hero -->
+    <div class="module-hero">
+      <div class="module-hero-tag">🐧 Chapter 2 · Fundamentals</div>
+      <h1>Linux Basics</h1>
+      <!-- ✏️ EDIT: Update the subtitle below with your own intro description -->
+      <p class="module-hero-sub">Master the OS that powers 90% of the internet — and every serious cybersecurity tool. From terminal basics to scripting, this is where things get real.</p>
+      <div class="module-hero-meta">
+        <div class="meta-item">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z"/></svg>
+          10 Sections
+        </div>
+        <div class="meta-item">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          50 Lessons
+        </div>
+        <div class="meta-item">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          Beginner Friendly
+        </div>
+      </div>
+    </div>
+
+    <!-- Content sections — generated from JS data -->
+    <div id="contentArea"></div>
+
+  </main>
+</div>
+
+<script>
+// ============================================================
+// ✏️ COURSE DATA — Edit descriptions, YouTube links, and
+//    resource URLs here. Search for "EDIT" comments.
+// ============================================================
+const chapters = [
+  {
+    id: "s1", num: "2.1", title: "Introduction to Linux",
+    lessons: [
+      { num:"1", title:"What is Linux",                         description:"Write your description here. What Linux is, the kernel vs the OS, why it dominates servers and cybersecurity.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"2", title:"History and Evolution",                 description:"Write your description here. Linus Torvalds, Unix roots, GNU project, major milestones in Linux history.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"3", title:"Linux Distributions",                   description:"Write your description here. Ubuntu, Fedora, Debian, Arch, Kali — what makes each different and when to use which.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"4", title:"Open Source vs Proprietary Software",   description:"Write your description here. What open source means, licensing, advantages for security research and learning.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"5", title:"Linux Desktop vs Server",               description:"Write your description here. GUI vs headless server, use cases, why most cybersecurity work is CLI-based.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+    ]
+  },
+  {
+    id: "s2", num: "2.2", title: "Installing Linux",
+    lessons: [
+      { num:"1", title:"Live CD/USB vs Full Install",           description:"Write your description here. Booting from USB, what a live environment is, persistence, when to install properly.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"2", title:"Dual Boot vs Virtual Machine",          description:"Write your description here. Pros/cons of each method, VirtualBox/VMware setup, recommended approach for beginners.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"3", title:"Disk Partitioning Basics",              description:"Write your description here. Primary vs logical partitions, swap space, root vs home partition, GPT vs MBR.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"4", title:"Bootloaders (GRUB)",                    description:"Write your description here. What GRUB does, editing GRUB config, boot order, recovery from broken bootloader.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"5", title:"Installation Troubleshooting",          description:"Write your description here. Common install errors, driver issues, black screens, EFI/BIOS settings.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+    ]
+  },
+  {
+    id: "s3", num: "2.3", title: "Linux File System",
+    lessons: [
+      { num:"1", title:"Directory Structure",                   description:"Write your description here. /, /home, /etc, /var, /usr, /bin, /tmp — what lives where and why.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"2", title:"File Types in Linux",                   description:"Write your description here. Regular files, directories, symlinks, device files, sockets — how Linux treats everything as a file.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"3", title:"Absolute vs Relative Paths",            description:"Write your description here. / as root, ~ as home, . and .. — navigating the file system confidently.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"4", title:"Hidden Files & Dotfiles",               description:"Write your description here. Files starting with ., config files like .bashrc, .ssh, how to view and edit them.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"5", title:"Mounting Drives & Devices",             description:"Write your description here. mount/umount, /mnt vs /media, fstab, USB drives and external disks in Linux.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+    ]
+  },
+  {
+    id: "s4", num: "2.4", title: "Basic Linux Commands",
+    lessons: [
+      { num:"1", title:"Navigation (ls, cd, pwd)",              description:"Write your description here. Listing files, changing directories, printing working directory — the three commands you'll use every minute.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"2", title:"File Operations (cp, mv, rm, touch, mkdir)", description:"Write your description here. Creating, copying, moving, deleting files and directories — flags like -r, -f, -v.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"3", title:"Viewing Files (cat, less, head, tail)",  description:"Write your description here. Quickly reading files, paging through long outputs, watching live logs with tail -f.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"4", title:"Searching Files (find, grep)",           description:"Write your description here. Finding files by name/type/size, searching inside files with grep, combining both with pipes.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"5", title:"Permissions & Ownership (chmod, chown)", description:"Write your description here. rwx notation, octal permissions, changing owner and group, sticky bit and setuid.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+    ]
+  },
+  {
+    id: "s5", num: "2.5", title: "Users and Groups",
+    lessons: [
+      { num:"1", title:"Creating Users & Groups",               description:"Write your description here. useradd, groupadd, usermod — setting up accounts and managing group membership.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"2", title:"Managing Passwords",                    description:"Write your description here. passwd command, /etc/shadow, password aging policies, locking accounts.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"3", title:"User Permissions & Sudo",               description:"Write your description here. /etc/sudoers, giving specific users root-level access, principle of least privilege.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"4", title:"Switching Users (su, sudo)",            description:"Write your description here. su vs sudo, running single commands as root, sudo -i vs sudo su.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"5", title:"Home Directories & Profiles",           description:"Write your description here. /home/username structure, .bashrc vs .bash_profile, shell environment setup.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+    ]
+  },
+  {
+    id: "s6", num: "2.6", title: "Package Management",
+    lessons: [
+      { num:"1", title:"Package Managers Overview",             description:"Write your description here. APT (Debian/Ubuntu), YUM/DNF (Fedora/RHEL), Pacman (Arch) — how each works.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"2", title:"Installing Software",                   description:"Write your description here. apt install, dependencies, .deb and .rpm files, installing from source.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"3", title:"Updating & Upgrading Packages",         description:"Write your description here. apt update vs apt upgrade, dist-upgrade, keeping your system patched.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"4", title:"Removing Software",                     description:"Write your description here. apt remove vs apt purge, cleaning up orphaned packages with autoremove.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"5", title:"Searching Repositories",               description:"Write your description here. apt search, apt-cache, adding PPAs and third-party repos, snap and flatpak.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+    ]
+  },
+  {
+    id: "s7", num: "2.7", title: "Processes & System Monitoring",
+    lessons: [
+      { num:"1", title:"Understanding Processes",               description:"Write your description here. PIDs, parent/child processes, foreground vs background, process states.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"2", title:"Viewing Processes (ps, top, htop)",     description:"Write your description here. ps aux, reading top output, installing and using htop, sorting by CPU/RAM.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"3", title:"Killing Processes (kill, killall)",     description:"Write your description here. Signals (SIGTERM, SIGKILL), kill by PID, killall by name, zombie processes.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"4", title:"System Resource Monitoring",            description:"Write your description here. df, du, free, vmstat, iostat — checking disk, RAM, and CPU health.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"5", title:"Scheduling Tasks (cron, at)",           description:"Write your description here. crontab syntax, scheduling recurring jobs, at for one-time tasks, cron security risks.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+    ]
+  },
+  {
+    id: "s8", num: "2.8", title: "Networking Basics",
+    lessons: [
+      { num:"1", title:"Network Interfaces (ifconfig, ip addr)", description:"Write your description here. Listing interfaces, IP/MAC addresses, bringing interfaces up/down, loopback.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"2", title:"Checking Connectivity (ping, traceroute)", description:"Write your description here. Testing reachability, reading traceroute hops, netstat and ss for open connections.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"3", title:"SSH Basics",                            description:"Write your description here. Connecting to remote machines, SSH keys, scp for file transfer, hardening SSH config.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"4", title:"Firewalls & iptables Basics",           description:"Write your description here. iptables chains, ufw as a simpler front-end, allowing/blocking ports, listing rules.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"5", title:"DNS & Hostname Management",             description:"Write your description here. /etc/hosts, /etc/resolv.conf, hostnamectl, nslookup and dig for DNS queries.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+    ]
+  },
+  {
+    id: "s9", num: "2.9", title: "Shell Scripting Basics",
+    lessons: [
+      { num:"1", title:"Writing Your First Script",             description:"Write your description here. Creating a .sh file, making it executable with chmod +x, running it with bash or ./", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"2", title:"Shebang (#!/bin/bash)",                 description:"Write your description here. What the shebang line does, bash vs sh vs zsh, env-based shebangs for portability.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"3", title:"Variables & Environment",               description:"Write your description here. Defining variables, $VAR syntax, environment variables, export, $PATH explained.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"4", title:"Conditionals (if, case)",               description:"Write your description here. if/elif/else/fi syntax, comparison operators, case statements, exit codes.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"5", title:"Loops (for, while)",                    description:"Write your description here. for loop over lists and ranges, while loop with conditions, break and continue.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+    ]
+  },
+  {
+    id: "s10", num: "2.10", title: "Security & Permissions",
+    lessons: [
+      { num:"1", title:"File Permissions & ACLs",               description:"Write your description here. Extended permissions with getfacl/setfacl, when standard rwx isn't enough.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"2", title:"Sudoers & Root Access",                 description:"Write your description here. Editing /etc/sudoers safely with visudo, NOPASSWD entries, auditing sudo usage.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"3", title:"Basic Firewall Setup",                  description:"Write your description here. Setting up ufw, default deny policy, allowing specific ports, enabling at boot.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"4", title:"Updating & Patching System",            description:"Write your description here. Why staying patched matters, automating updates, checking CVEs for installed packages.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+      { num:"5", title:"Log Files and Auditing",                description:"Write your description here. /var/log structure, journalctl, auth.log, syslog — reading logs to spot issues.", resources:[{type:"yt",href:"#",name:"YouTube — [Add video title here]",sub:"Recommended channel / playlist"},{type:"web",href:"#",name:"Article — [Add article title here]",sub:"Reference or reading material"}] },
+    ]
+  },
+];
+
+// ── Resource type icons
+const icons = {
+  yt:  `<div class="resource-icon yt">▶</div>`,
+  web: `<div class="resource-icon web">🌐</div>`,
+  doc: `<div class="resource-icon doc">📄</div>`,
+};
+
+// ── Build sidebar
+const sidebarNav = document.getElementById('sidebarNav');
+chapters.forEach((ch, ci) => {
+  const group = document.createElement('div');
+  group.className = 'sidebar-group';
+  group.innerHTML = `
+    <button class="sidebar-section-btn" data-ci="${ci}">
+      <span style="display:flex;align-items:center;gap:8px;flex:1">
+        <span class="sidebar-section-num">${ch.num}</span>
+        <span>${ch.title}</span>
+      </span>
+      <svg class="sidebar-chevron" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div class="sidebar-items" id="sidebarItems-${ci}">
+      ${ch.lessons.map((l,li) => `
+        <a href="#lesson-${ci}-${li}" class="sidebar-item" id="sidebarLink-${ci}-${li}">
+          <span class="sidebar-item-num">${ch.num}.${l.num}</span>
+          <span>${l.title}</span>
+        </a>`).join('')}
+    </div>
+  `;
+  sidebarNav.appendChild(group);
+});
+
+// Sidebar toggle
+document.querySelectorAll('.sidebar-section-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const ci = btn.dataset.ci;
+    const items = document.getElementById(`sidebarItems-${ci}`);
+    const isOpen = items.classList.contains('open');
+    // Close all
+    document.querySelectorAll('.sidebar-items').forEach(el => el.classList.remove('open'));
+    document.querySelectorAll('.sidebar-section-btn').forEach(el => el.classList.remove('open','active'));
+    if (!isOpen) {
+      items.classList.add('open');
+      btn.classList.add('open','active');
+    }
+  });
+});
+
+// ── Build content area
+const contentArea = document.getElementById('contentArea');
+chapters.forEach((ch, ci) => {
+  const block = document.createElement('div');
+  block.className = 'section-block';
+  block.id = `section-${ci}`;
+  block.innerHTML = `
+    <div class="section-tag">${ch.num}</div>
+    <div class="section-heading">${ch.title}</div>
+    ${ch.lessons.map((l, li) => `
+      <div class="lesson-card" id="lesson-${ci}-${li}">
+        <div class="lesson-header" data-ci="${ci}" data-li="${li}">
+          <span class="lesson-num">${ch.num}.${l.num}</span>
+          <span class="lesson-title">${l.title}</span>
+          <div class="lesson-toggle">
+            <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/>
+            </svg>
+          </div>
+        </div>
+        <div class="lesson-body">
+          <div class="lesson-body-inner">
+
+            <!-- ✏️ DESCRIPTION — Replace placeholder text with real content -->
+            <div class="desc-area">
+              <div class="desc-placeholder">
+                <span>✏️</span>
+                <span>${l.description}</span>
+              </div>
+            </div>
+
+            <!-- RESOURCES -->
+            <div class="resources-area">
+              <div class="resources-label">Resources</div>
+              ${l.resources.map(r => `
+                <a class="resource-link" href="${r.href}" target="_blank" rel="noopener">
+                  ${icons[r.type] || icons.web}
+                  <div class="resource-info">
+                    <!-- ✏️ EDIT: Replace name and sub with real title and channel/source name -->
+                    <div class="resource-name">${r.name}</div>
+                    <div class="resource-sub">${r.sub}</div>
+                  </div>
+                  <span class="resource-arrow">↗</span>
+                </a>`).join('')}
+            </div>
+
+            <!-- Mark as done -->
+            <button class="done-btn" data-ci="${ci}" data-li="${li}">
+              <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+              Mark as done
+            </button>
+
+          </div>
+        </div>
+      </div>`).join('')}
+  `;
+  contentArea.appendChild(block);
+});
+
+// ── Lesson card toggle
+document.addEventListener('click', e => {
+  const header = e.target.closest('.lesson-header');
+  if (header) {
+    const card = header.closest('.lesson-card');
+    card.classList.toggle('open');
+    // Highlight sidebar item
+    const ci = header.dataset.ci, li = header.dataset.li;
+    document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+    const sLink = document.getElementById(`sidebarLink-${ci}-${li}`);
+    if (sLink) sLink.classList.add('active');
+    // Auto-open sidebar section
+    const items = document.getElementById(`sidebarItems-${ci}`);
+    const btn = document.querySelector(`.sidebar-section-btn[data-ci="${ci}"]`);
+    if (items && !items.classList.contains('open')) {
+      items.classList.add('open'); btn && btn.classList.add('open','active');
+    }
+  }
+});
+
+// ── Mark as done
+let doneCount = 0;
+const totalLessons = chapters.reduce((sum, ch) => sum + ch.lessons.length, 0);
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.done-btn');
+  if (btn) {
+    const ci = btn.dataset.ci, li = btn.dataset.li;
+    const isDone = btn.classList.toggle('marked');
+    btn.textContent = isDone ? '✓ Done!' : 'Mark as done';
+    if (isDone) { btn.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Done!'; }
+    else { btn.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Mark as done'; }
+    // Sidebar dot
+    const sLink = document.getElementById(`sidebarLink-${ci}-${li}`);
+    if (sLink) sLink.classList.toggle('done', isDone);
+    // Update progress bar
+    doneCount += isDone ? 1 : -1;
+    const pct = Math.round((doneCount / totalLessons) * 100);
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.querySelector('.nav-progress-label').textContent = `${pct}% done`;
+  }
+});
+
+// ── Custom cursor
+const cursor = document.getElementById('cursor');
+const ring = document.getElementById('cursorRing');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove', e => { mx=e.clientX; my=e.clientY; });
+(function animateCursor(){
+  cursor.style.left=mx+'px'; cursor.style.top=my+'px';
+  rx+=(mx-rx)*0.13; ry+=(my-ry)*0.13;
+  ring.style.left=rx+'px'; ring.style.top=ry+'px';
+  requestAnimationFrame(animateCursor);
+})();
+document.querySelectorAll('a, button, .lesson-header, .card-wrap').forEach(el=>{
+  el.addEventListener('mouseenter',()=>{ ring.style.transform='translate(-50%,-50%) scale(1.6)'; });
+  el.addEventListener('mouseleave',()=>{ ring.style.transform='translate(-50%,-50%) scale(1)'; });
+});
+
+// Auto-open first sidebar section
+document.querySelector('.sidebar-section-btn').click();
+</script>
+</body>
+</html>
